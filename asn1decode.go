@@ -282,16 +282,16 @@ func (th *AsnData) reset() {
 	th.sub = th.sub[0:0]
 }
 
-func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool) {
+func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool, error) {
 	th.reset()
 	th.data = data[offset:]
 	if len(data) < 2 {
-		return data, false
+		return data, false, nil
 	}
 	// считываем тег
 	pos, err := th.tag.parse(data)
 	if err != nil {
-		return data, false
+		return data, false, err
 	}
 	// считываем длину
 	th.len = int(data[pos] & 0x7F)
@@ -305,7 +305,7 @@ func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool) {
 	pos++
 
 	if len(th.data)-pos < th.len {
-		return data, false
+		return data, false, nil
 	}
 
 	th.data = th.data[pos : pos+th.len]
@@ -314,15 +314,18 @@ func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool) {
 		buf := th.data
 		for ok := true; len(buf) > 0 && ok; {
 			var asn AsnData
-			if buf, ok = asn.Parse(buf, 0); ok {
+			if buf, ok, err = asn.Parse(buf, 0); ok {
 				th.sub = append(th.sub, &asn)
 			}
 		}
+		if err != nil {
+			return data, false, err
+		}
 		if len(buf) > 0 {
-			return data, false
+			return data, false, nil
 		}
 	}
-	return data[offset+pos+len(th.data):], true
+	return data[offset+pos+len(th.data):], true, nil
 }
 
 func (th *AsnData) decode(sheme *Sheme, ctx *AsnContext) (res interface{}, err error) {

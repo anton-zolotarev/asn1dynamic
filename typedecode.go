@@ -620,15 +620,18 @@ func (th *AsnData) parseChoice(sheme *Sheme, ctx *AsnContext) (ret interface{}, 
 	if th.tag.tagClass == classContextSpecific && th.tag.tagNumber == sheme.Index() && len(th.sub) == 1 {
 		ret, err = th.sub[0].decode(ls[sheme.Index()], ctxn)
 	}
-	if err == nil {
-		return
-	} else {
+	if err != nil {
 		for _, sh := range ls {
-			ret, err = th.decode(sh, ctxn)
-			if err == nil {
-				return
+			if ret, err = th.decode(sh, ctxn); err == nil {
+				break
 			}
 		}
+	}
+	if err == nil {
+		ret2 := make(map[string]interface{})
+		ret2[ls[sheme.Index()].Name()] = ret
+		ret = ret2
+		return
 	}
 	return nil, decodeDataErr("'%s' can not parse", th.tag.typeName())
 }

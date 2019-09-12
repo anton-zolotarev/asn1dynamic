@@ -8,7 +8,7 @@ import (
 
 type AsnDec interface {
 	Decode(sheme *Sheme) (*simplejson.Json, error)
-	Parse(data []byte, offset int) ([]byte, bool)
+	Parse(data []byte, offset int) ([]byte, bool, error)
 }
 
 type AsnSeq interface {
