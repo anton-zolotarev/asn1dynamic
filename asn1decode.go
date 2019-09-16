@@ -74,12 +74,14 @@ func Debug(on bool) {
 }
 
 func debugHex(data []byte) {
-	var buff bytes.Buffer
-	buff.WriteString(fmt.Sprintf("len %d\n", len(data)))
-	for i := 0; i < len(data); i++ {
-		buff.WriteString(fmt.Sprintf("%02X ", data[i]))
+	if debug {
+		var buff bytes.Buffer
+		buff.WriteString(fmt.Sprintf("len %d\n", len(data)))
+		for i := 0; i < len(data); i++ {
+			buff.WriteString(fmt.Sprintf("%02X ", data[i]))
+		}
+		fmt.Println(buff.String())
 	}
-	fmt.Println(buff.String())
 }
 
 func debugPrint(frm string, arg ...interface{}) {

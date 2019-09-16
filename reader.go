@@ -19,7 +19,7 @@ func (rd *asnReader) Read() (AsnDec, error) {
 	dec := NewDecoder()
 
 	ln, err := rd.reader.Read(rd.buff1)
-	debugPrint("TCP read: %d tail: %d", ln, len(rd.buff2))
+	debugPrint("ASNReader read: %d tail: %d", ln, len(rd.buff2))
 	if err != nil || ln == 0 {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (rd *asnReader) Read() (AsnDec, error) {
 	tail, ok, err := dec.Parse(rd.buff2, 0)
 	if err != nil {
 		rd.buff2 = rd.buff2[0:0]
-		return nil, fmt.Errorf("TCP Decode: %s", out.err.Error())
+		return nil, fmt.Errorf("ASNReader Decode: %s", err.Error())
 	}
 
 	rd.buff2 = append(rd.buff2[0:0], tail...)

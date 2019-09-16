@@ -9,6 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 	"unsafe"
+
+	"github.com/anton-zolotarev/go-simplejson"
 )
 
 func unsafe_slice2str(bs []byte) string {
@@ -107,11 +109,6 @@ func findField(sheme *Sheme, name string) (*Sheme, error) {
 	return sh, nil
 }
 
-type AsnElm interface {
-	this() *AsnData
-	Encode() ([]byte, error)
-}
-
 func (th *AsnData) this() *AsnData {
 	return th
 }
@@ -153,11 +150,11 @@ func (sheme *Sheme) Enumerated(val string) (AsnElm, error) {
 	var out *AsnData
 	var err error
 	if out, err = makeType(sheme, tagENUMERATED); err == nil {
-		itm, ok := sheme.FieldAttr()[val].(int)
+		itm, ok := sheme.FieldAttr()[val]
 		if !ok {
-			return nil, encodeDataErr("'%s' %s wrong value: %s", sheme.Name(), sheme.Type(), val)
+			return nil, encodeDataErr("'%s' %s wrong value: '%s'", sheme.Name(), sheme.Type(), val)
 		}
-		out.data = encodeInt(itm)
+		out.data = encodeInt(simplejson.Wrap(itm).MustInt())
 	}
 	return out, err
 }
@@ -306,21 +303,22 @@ func (sheme *Sheme) Sequence() (AsnSeq, error) {
 	var out *AsnData
 	var err error
 	if out, err = makeType(sheme, tagSEQUENCE); err == nil {
+		out.tag.tagConstructed = true
 		fld := sheme.FieldAttr()
-		if fld == nil {
+		if fld != nil {
+			out.sub = make([]*AsnData, len(fld))
+		} else if sheme.OfAttr() == nil {
 			return nil, encodeShemeErr("MakeSequence: no sheme description")
 		}
-		out.tag.tagConstructed = true
-		out.sub = make([]*AsnData, len(fld))
 	}
 	return out, err
 }
 
 func (th *AsnData) SeqFieldByName(name string, el AsnElm, err error) error {
-	dt := el.this()
 	if err != nil {
 		return err
 	}
+	dt := el.this()
 	if th.sheme.Type() != "SEQUENCE" {
 		return encodeShemeErr("'%s' does not a SEQUENCE", th.sheme.Name())
 	}
@@ -336,14 +334,17 @@ func (th *AsnData) SeqFieldByName(name string, el AsnElm, err error) error {
 }
 
 func (th *AsnData) SeqField(el AsnElm, err error) error {
+	if err != nil {
+		return err
+	}
 	return th.SeqFieldByName(el.this().sheme.Name(), el, err)
 }
 
 func (th *AsnData) SeqItem(el AsnElm, err error) error {
-	dt := el.this()
 	if err != nil {
 		return err
 	}
+	dt := el.this()
 	if th.sheme.Type() != "SEQUENCE" {
 		return encodeShemeErr("'%s' does not a SEQUENCE", th.sheme.Name())
 	}
@@ -372,10 +373,10 @@ func (sheme *Sheme) Choice() (AsnChoice, error) {
 }
 
 func (th *AsnData) ChoiceSetByName(name string, el AsnElm, err error) error {
-	dt := el.this()
 	if err != nil {
 		return err
 	}
+	dt := el.this()
 	if th.sheme.Type() != "CHOICE" {
 		return encodeShemeErr("'%s' does not a CHOICE", th.sheme.Name())
 	}
@@ -392,6 +393,9 @@ func (th *AsnData) ChoiceSetByName(name string, el AsnElm, err error) error {
 }
 
 func (th *AsnData) ChoiceSet(el AsnElm, err error) error {
+	if err != nil {
+		return err
+	}
 	return th.ChoiceSetByName(el.this().sheme.Name(), el, err)
 }
 
@@ -408,10 +412,10 @@ func (sheme *Sheme) Any() (AsnAny, error) {
 }
 
 func (th *AsnData) AnySetByName(name string, el AsnElm, err error) error {
-	dt := el.this()
 	if err != nil {
 		return err
 	}
+	dt := el.this()
 	if th.sheme.Type() != "ANY" {
 		return encodeShemeErr("'%s' does not a ANY", th.sheme.Name())
 	}
@@ -428,6 +432,9 @@ func (th *AsnData) AnySetByName(name string, el AsnElm, err error) error {
 }
 
 func (th *AsnData) AnySet(el AsnElm, err error) error {
+	if err != nil {
+		return err
+	}
 	return th.AnySetByName(el.this().sheme.Name(), el, err)
 }
 

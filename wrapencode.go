@@ -6,7 +6,13 @@ import (
 	"github.com/anton-zolotarev/go-simplejson"
 )
 
+type AsnElm interface {
+	this() *AsnData
+	Encode() ([]byte, error)
+}
+
 type AsnDec interface {
+	AsnElm
 	Decode(sheme *Sheme) (*simplejson.Json, error)
 	Parse(data []byte, offset int) ([]byte, bool, error)
 }
