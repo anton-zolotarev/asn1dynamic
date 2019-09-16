@@ -31,7 +31,7 @@ func (rd *asnReader) Read() (AsnDec, error) {
 		return nil, fmt.Errorf("ASNReader Decode: %s", err.Error())
 	}
 
-	rd.buff2 = append(rd.buff2[0:0], tail...)
+	rd.buff2 = tail
 
 	if ok {
 		return dec, nil

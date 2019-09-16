@@ -232,7 +232,7 @@ func typeTag(tag string) int {
 	case "BMPString":
 		return tagBMPString
 	}
-	return 0xFF
+	return tagEOC
 }
 
 func (th *AsnTag) typeName() string {
@@ -311,7 +311,7 @@ func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool, error) {
 	}
 
 	th.data = th.data[pos : pos+th.len]
-
+	debugPrint("Parse: %s con: %t", th.tag.typeName(), th.tag.tagConstructed)
 	if th.tag.tagConstructed {
 		buf := th.data
 		for ok := true; len(buf) > 0 && ok; {
