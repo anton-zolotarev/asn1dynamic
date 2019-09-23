@@ -109,6 +109,14 @@ func findField(sheme *Sheme, name string) (*Sheme, error) {
 	return sh, nil
 }
 
+func findOf(sheme *Sheme) (*Sheme, error) {
+	sh := sheme.Of()
+	if sh == nil {
+		return nil, encodeShemeErr("'%s' does not contain the field '$of'", sheme.Name())
+	}
+	return sh, nil
+}
+
 func (th *AsnData) this() *AsnData {
 	return th
 }

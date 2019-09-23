@@ -42,6 +42,25 @@ type AsnSeq interface {
 	SetSequence(name string) (out AsnSeq, err error)
 	SetChoice(name string) (out AsnChoice, err error)
 	SetAny(name string) (out AsnAny, err error)
+
+	ItemBoolean(val bool) (AsnElm, error)
+	ItemInteger(val int) (AsnElm, error)
+	ItemReal(val float64) (AsnElm, error)
+	ItemEnumerated(val string) (AsnElm, error)
+	ItemBitString(val BitStr) (AsnElm, error)
+	ItemUTCTime(val time.Time) (AsnElm, error)
+	ItemGeneralizedTime(val time.Time) (AsnElm, error)
+	ItemObjectIdentifier(val OID) (AsnElm, error)
+	ItemObjectDescriptor(val string) (AsnElm, error)
+	ItemNumericString(val string) (AsnElm, error)
+	ItemPrintableString(val string) (AsnElm, error)
+	ItemIA5String(val string) (AsnElm, error)
+	ItemUTF8String(val string) (AsnElm, error)
+	ItemOctetString(val []byte) (AsnElm, error)
+
+	ItemSequence() (AsnElm, error)
+	ItemChoice() (AsnElm, error)
+	ItemAny() (AsnElm, error)
 }
 
 type AsnChoice interface {
@@ -123,6 +142,14 @@ func (th *AsnData) Boolean(name string, val bool) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) ItemBoolean(val bool) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Boolean(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetBoolean(name string, val bool) error {
 	return th.SeqField(th.Boolean(name, val))
 }
@@ -141,6 +168,14 @@ func (th *AsnData) Integer(name string, val int) (out AsnElm, err error) {
 		out, err = sh.Integer(val)
 	}
 	return
+}
+
+func (th *AsnData) ItemInteger(val int) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Integer(val)
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetInteger(name string, val int) error {
@@ -163,6 +198,14 @@ func (th *AsnData) Real(name string, val float64) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) ItemReal(val float64) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Real(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetReal(name string, val float64) error {
 	return th.SeqField(th.Real(name, val))
 }
@@ -181,6 +224,14 @@ func (th *AsnData) Enumerated(name string, val string) (out AsnElm, err error) {
 		out, err = sh.Enumerated(val)
 	}
 	return
+}
+
+func (th *AsnData) ItemEnumerated(val string) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Enumerated(val)
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetEnumerated(name string, val string) error {
@@ -203,6 +254,14 @@ func (th *AsnData) BitString(name string, val BitStr) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) ItemBitString(val BitStr) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.BitString(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetBitString(name string, val BitStr) error {
 	return th.SeqField(th.BitString(name, val))
 }
@@ -221,6 +280,14 @@ func (th *AsnData) UTCTime(name string, val time.Time) (out AsnElm, err error) {
 		out, err = sh.UTCTime(val)
 	}
 	return
+}
+
+func (th *AsnData) ItemUTCTime(val time.Time) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.UTCTime(val)
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetUTCTime(name string, val time.Time) error {
@@ -243,6 +310,14 @@ func (th *AsnData) GeneralizedTime(name string, val time.Time) (out AsnElm, err 
 	return
 }
 
+func (th *AsnData) ItemGeneralizedTime(val time.Time) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.GeneralizedTime(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetGeneralizedTime(name string, val time.Time) error {
 	return th.SeqField(th.GeneralizedTime(name, val))
 }
@@ -261,6 +336,14 @@ func (th *AsnData) ObjectIdentifier(name string, val OID) (out AsnElm, err error
 		out, err = sh.ObjectIdentifier(val)
 	}
 	return
+}
+
+func (th *AsnData) ItemObjectIdentifier(val OID) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.ObjectIdentifier(val)
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetObjectIdentifier(name string, val OID) error {
@@ -283,6 +366,14 @@ func (th *AsnData) ObjectDescriptor(name string, val string) (out AsnElm, err er
 	return
 }
 
+func (th *AsnData) ItemObjectDescriptor(val string) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.ObjectDescriptor(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetObjectDescriptor(name string, val string) error {
 	return th.SeqField(th.ObjectDescriptor(name, val))
 }
@@ -301,6 +392,14 @@ func (th *AsnData) NumericString(name string, val string) (out AsnElm, err error
 		out, err = sh.NumericString(val)
 	}
 	return
+}
+
+func (th *AsnData) ItemNumericString(val string) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.NumericString(val)
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetNumericString(name string, val string) error {
@@ -323,6 +422,14 @@ func (th *AsnData) PrintableString(name string, val string) (out AsnElm, err err
 	return
 }
 
+func (th *AsnData) ItemPrintableString(val string) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.PrintableString(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetPrintableString(name string, val string) error {
 	return th.SeqField(th.PrintableString(name, val))
 }
@@ -341,6 +448,14 @@ func (th *AsnData) IA5String(name string, val string) (out AsnElm, err error) {
 		out, err = sh.IA5String(val)
 	}
 	return
+}
+
+func (th *AsnData) ItemIA5String(val string) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.IA5String(val)
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetIA5String(name string, val string) error {
@@ -363,6 +478,14 @@ func (th *AsnData) UTF8String(name string, val string) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) ItemUTF8String(val string) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.UTF8String(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetUTF8String(name string, val string) error {
 	return th.SeqField(th.UTF8String(name, val))
 }
@@ -383,6 +506,14 @@ func (th *AsnData) OctetString(name string, val []byte) (out AsnElm, err error) 
 	return
 }
 
+func (th *AsnData) ItemOctetString(val []byte) (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.OctetString(val)
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetOctetString(name string, val []byte) error {
 	return th.SeqField(th.OctetString(name, val))
 }
@@ -401,6 +532,14 @@ func (th *AsnData) Sequence(name string) (out AsnSeq, err error) {
 		out, err = sh.Sequence()
 	}
 	return
+}
+
+func (th *AsnData) ItemSequence() (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Sequence()
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetSequence(name string) (out AsnSeq, err error) {
@@ -432,6 +571,14 @@ func (th *AsnData) Choice(name string) (out AsnChoice, err error) {
 	return
 }
 
+func (th *AsnData) ItemChoice() (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Choice()
+	}
+	return nil, err
+}
+
 func (th *AsnData) SetChoice(name string) (out AsnChoice, err error) {
 	if out, err = th.Choice(name); err == nil {
 		th.SeqField(out, nil)
@@ -459,6 +606,14 @@ func (th *AsnData) Any(name string) (out AsnAny, err error) {
 		out, err = sh.Any()
 	}
 	return
+}
+
+func (th *AsnData) ItemAny() (AsnElm, error) {
+	sh, err := findOf(th.sheme)
+	if err == nil {
+		return sh.Any()
+	}
+	return nil, err
 }
 
 func (th *AsnData) SetAny(name string) (out AsnAny, err error) {
