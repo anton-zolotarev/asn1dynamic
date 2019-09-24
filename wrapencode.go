@@ -59,8 +59,8 @@ type AsnSeq interface {
 	AddOctetString(val []byte) error
 
 	AddSequence() (out AsnSeq, err error)
-	AddChoice() (out AsnSeq, err error)
-	AddAny() (out AsnSeq, err error)
+	AddChoice() (out AsnChoice, err error)
+	AddAny() (out AsnAny, err error)
 }
 
 type AsnChoice interface {
