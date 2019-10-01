@@ -7,7 +7,6 @@ import (
 )
 
 type AsnElm interface {
-	this() *AsnData
 	Encode() ([]byte, error)
 }
 
@@ -17,8 +16,31 @@ type AsnDec interface {
 	Parse(data []byte, offset int) ([]byte, bool, error)
 }
 
+type AsnPath interface {
+	PathNull(path ...string) error
+	PathBoolean(val bool, path ...string) error
+	PathInteger(val int, path ...string) error
+	PathReal(val float64, path ...string) error
+	PathEnumerated(val string, path ...string) error
+	PathBitString(val BitStr, path ...string) error
+	PathUTCTime(val time.Time, path ...string) error
+	PathGeneralizedTime(val time.Time, path ...string) error
+	PathObjectIdentifier(val OID, path ...string) error
+	PathObjectDescriptor(val string, path ...string) error
+	PathNumericString(val string, path ...string) error
+	PathPrintableString(val string, path ...string) error
+	PathIA5String(val string, path ...string) error
+	PathUTF8String(val string, path ...string) error
+	PathOctetString(val []byte, path ...string) error
+
+	PathSequence(path ...string) (out AsnSeq, err error)
+	PathChoice(path ...string) (out AsnChoice, err error)
+	PathAny(path ...string) (out AsnAny, err error)
+}
+
 type AsnSeq interface {
 	AsnElm
+	AsnPath
 	SeqFieldByName(name string, el AsnElm, err error) error
 	SeqField(el AsnElm, err error) error
 	SeqItem(el AsnElm, err error) error
@@ -65,6 +87,7 @@ type AsnSeq interface {
 
 type AsnChoice interface {
 	AsnElm
+	AsnPath
 	ChoiceSetByName(name string, el AsnElm, err error) error
 	ChoiceSet(el AsnElm, err error) error
 
@@ -91,6 +114,7 @@ type AsnChoice interface {
 
 type AsnAny interface {
 	AsnElm
+	AsnPath
 	AnySetByName(name string, el AsnElm, err error) error
 	AnySet(el AsnElm, err error) error
 
@@ -114,12 +138,59 @@ type AsnAny interface {
 	AnyChoice(name string) (out AsnChoice, err error)
 }
 
+func setByType(th *AsnData, elm AsnElm, err error) error {
+	switch th.sheme.Type() {
+	case "SEQUENCE":
+		return th.SeqField(elm, err)
+	case "CHOICE":
+		return th.ChoiceSet(elm, err)
+	case "ANY":
+		return th.AnySet(elm, err)
+	}
+	return encodeTypeErr("Mount", th.sheme)
+}
+
+func makePath(th *AsnData, path ...string) (*AsnData, error) {
+	if len(path) == 0 {
+		return th, nil
+	}
+
+	var out AsnElm
+	if sh, err := findField(th.sheme, path[0]); err == nil {
+		switch sh.Type() {
+		case "SEQUENCE":
+			out, err = sh.Sequence()
+		case "CHOICE":
+			out, err = sh.Choice()
+		case "ANY":
+			out, err = sh.Any()
+		default:
+			return nil, encodeTypeErr(path[0], sh)
+		}
+	} else {
+		return nil, err
+	}
+	if err := setByType(th, out, nil); err != nil {
+		return nil, err
+	}
+	return makePath(this(out), path[1:]...)
+}
+
 func (th *AsnData) Null(name string) (out AsnElm, err error) {
 	sh, err := findField(th.sheme, name)
 	if err == nil {
 		out, err = sh.Null()
 	}
 	return
+}
+
+func (th *AsnData) PathNull(path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Null(path[len(path)-1])
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) SetNull(name string) error {
@@ -140,6 +211,15 @@ func (th *AsnData) Boolean(name string, val bool) (out AsnElm, err error) {
 		out, err = sh.Boolean(val)
 	}
 	return
+}
+
+func (th *AsnData) PathBoolean(val bool, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Boolean(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddBoolean(val bool) error {
@@ -170,6 +250,15 @@ func (th *AsnData) Integer(name string, val int) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) PathInteger(val int, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Integer(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddInteger(val int) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -196,6 +285,15 @@ func (th *AsnData) Real(name string, val float64) (out AsnElm, err error) {
 		out, err = sh.Real(val)
 	}
 	return
+}
+
+func (th *AsnData) PathReal(val float64, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Real(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddReal(val float64) error {
@@ -226,6 +324,15 @@ func (th *AsnData) Enumerated(name string, val string) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) PathEnumerated(val string, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Enumerated(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddEnumerated(val string) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -252,6 +359,15 @@ func (th *AsnData) BitString(name string, val BitStr) (out AsnElm, err error) {
 		out, err = sh.BitString(val)
 	}
 	return
+}
+
+func (th *AsnData) PathBitString(val BitStr, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.BitString(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddBitString(val BitStr) error {
@@ -282,6 +398,15 @@ func (th *AsnData) UTCTime(name string, val time.Time) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) PathUTCTime(val time.Time, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.UTCTime(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddUTCTime(val time.Time) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -308,6 +433,15 @@ func (th *AsnData) GeneralizedTime(name string, val time.Time) (out AsnElm, err 
 		out, err = sh.GeneralizedTime(val)
 	}
 	return
+}
+
+func (th *AsnData) PathGeneralizedTime(val time.Time, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.GeneralizedTime(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddGeneralizedTime(val time.Time) error {
@@ -338,6 +472,15 @@ func (th *AsnData) ObjectIdentifier(name string, val OID) (out AsnElm, err error
 	return
 }
 
+func (th *AsnData) PathObjectIdentifier(val OID, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.ObjectIdentifier(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddObjectIdentifier(val OID) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -364,6 +507,15 @@ func (th *AsnData) ObjectDescriptor(name string, val string) (out AsnElm, err er
 		out, err = sh.ObjectDescriptor(val)
 	}
 	return
+}
+
+func (th *AsnData) PathObjectDescriptor(val string, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.ObjectDescriptor(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddObjectDescriptor(val string) error {
@@ -394,6 +546,15 @@ func (th *AsnData) NumericString(name string, val string) (out AsnElm, err error
 	return
 }
 
+func (th *AsnData) PathNumericString(val string, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.NumericString(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddNumericString(val string) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -420,6 +581,15 @@ func (th *AsnData) PrintableString(name string, val string) (out AsnElm, err err
 		out, err = sh.PrintableString(val)
 	}
 	return
+}
+
+func (th *AsnData) PathPrintableString(val string, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.PrintableString(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddPrintableString(val string) error {
@@ -450,6 +620,15 @@ func (th *AsnData) IA5String(name string, val string) (out AsnElm, err error) {
 	return
 }
 
+func (th *AsnData) PathIA5String(val string, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.IA5String(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddIA5String(val string) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -476,6 +655,15 @@ func (th *AsnData) UTF8String(name string, val string) (out AsnElm, err error) {
 		out, err = sh.UTF8String(val)
 	}
 	return
+}
+
+func (th *AsnData) PathUTF8String(val string, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.UTF8String(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
 }
 
 func (th *AsnData) AddUTF8String(val string) error {
@@ -506,6 +694,15 @@ func (th *AsnData) OctetString(name string, val []byte) (out AsnElm, err error) 
 	return
 }
 
+func (th *AsnData) PathOctetString(val []byte, path ...string) error {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.OctetString(path[len(path)-1], val)
+		return setByType(pth, el, err)
+	}
+	return err
+}
+
 func (th *AsnData) AddOctetString(val []byte) error {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -532,6 +729,15 @@ func (th *AsnData) Sequence(name string) (out AsnSeq, err error) {
 		out, err = sh.Sequence()
 	}
 	return
+}
+
+func (th *AsnData) PathSequence(path ...string) (out AsnSeq, err error) {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Sequence(path[len(path)-1])
+		return el, setByType(pth, el, err)
+	}
+	return nil, err
 }
 
 func (th *AsnData) AddSequence() (out AsnSeq, err error) {
@@ -573,6 +779,15 @@ func (th *AsnData) Choice(name string) (out AsnChoice, err error) {
 	return
 }
 
+func (th *AsnData) PathChoice(path ...string) (out AsnChoice, err error) {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Choice(path[len(path)-1])
+		return el, setByType(pth, el, err)
+	}
+	return nil, err
+}
+
 func (th *AsnData) AddChoice() (out AsnChoice, err error) {
 	sh, err := findOf(th.sheme)
 	if err == nil {
@@ -610,6 +825,15 @@ func (th *AsnData) Any(name string) (out AsnAny, err error) {
 		out, err = sh.Any()
 	}
 	return
+}
+
+func (th *AsnData) PathAny(path ...string) (out AsnAny, err error) {
+	pth, err := makePath(th, path[:len(path)-1]...)
+	if err == nil {
+		el, err := pth.Any(path[len(path)-1])
+		return el, setByType(pth, el, err)
+	}
+	return nil, err
 }
 
 func (th *AsnData) AddAny() (out AsnAny, err error) {

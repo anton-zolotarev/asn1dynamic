@@ -117,8 +117,8 @@ func findOf(sheme *Sheme) (*Sheme, error) {
 	return sh, nil
 }
 
-func (th *AsnData) this() *AsnData {
-	return th
+func this(elm AsnElm) *AsnData {
+	return elm.(*AsnData)
 }
 
 func (sheme *Sheme) Null() (AsnElm, error) {
@@ -326,7 +326,7 @@ func (th *AsnData) SeqFieldByName(name string, el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	dt := el.this()
+	dt := this(el)
 	if th.sheme.Type() != "SEQUENCE" {
 		return encodeShemeErr("'%s' does not a SEQUENCE", th.sheme.Name())
 	}
@@ -345,14 +345,14 @@ func (th *AsnData) SeqField(el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	return th.SeqFieldByName(el.this().sheme.Name(), el, err)
+	return th.SeqFieldByName(this(el).sheme.Name(), el, err)
 }
 
 func (th *AsnData) SeqItem(el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	dt := el.this()
+	dt := this(el)
 	if th.sheme.Type() != "SEQUENCE" {
 		return encodeShemeErr("'%s' does not a SEQUENCE", th.sheme.Name())
 	}
@@ -384,7 +384,7 @@ func (th *AsnData) ChoiceSetByName(name string, el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	dt := el.this()
+	dt := this(el)
 	if th.sheme.Type() != "CHOICE" {
 		return encodeShemeErr("'%s' does not a CHOICE", th.sheme.Name())
 	}
@@ -404,7 +404,7 @@ func (th *AsnData) ChoiceSet(el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	return th.ChoiceSetByName(el.this().sheme.Name(), el, err)
+	return th.ChoiceSetByName(this(el).sheme.Name(), el, err)
 }
 
 func (sheme *Sheme) Any() (AsnAny, error) {
@@ -423,7 +423,7 @@ func (th *AsnData) AnySetByName(name string, el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	dt := el.this()
+	dt := this(el)
 	if th.sheme.Type() != "ANY" {
 		return encodeShemeErr("'%s' does not a ANY", th.sheme.Name())
 	}
@@ -443,7 +443,7 @@ func (th *AsnData) AnySet(el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	return th.AnySetByName(el.this().sheme.Name(), el, err)
+	return th.AnySetByName(this(el).sheme.Name(), el, err)
 }
 
 func lowest_set_bit(value int) int {
