@@ -284,6 +284,10 @@ func (th *AsnData) reset() {
 	th.sub = th.sub[0:0]
 }
 
+func (th *AsnData) RawData() []byte {
+	return th.data
+}
+
 func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool, error) {
 	th.reset()
 	th.data = data[offset:]

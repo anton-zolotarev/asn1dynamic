@@ -8,6 +8,7 @@ import (
 
 type AsnElm interface {
 	Encode() ([]byte, error)
+	RawData() []byte
 }
 
 type AsnDec interface {
