@@ -132,7 +132,7 @@ func (s *Sheme) EnumItems() map[int]string {
 	fld := s.FieldAttr()
 	ret := make(map[int]string)
 	for k, v := range fld {
-		if id, ok := v.(int); ok {
+		if id, err := simplejson.Wrap(v).Int(); err == nil {
 			ret[id] = k
 		}
 	}
