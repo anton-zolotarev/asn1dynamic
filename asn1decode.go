@@ -55,6 +55,7 @@ type AsnTag struct {
 
 type AsnData struct {
 	sheme *Sheme
+	fdata []byte
 	data  []byte
 	len   int
 	tag   AsnTag
@@ -285,12 +286,10 @@ func (th *AsnData) reset() {
 }
 
 func (th *AsnData) RawData() []byte {
-	return th.data
+	return th.fdata
 }
 
-func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool, error) {
-	th.reset()
-	th.data = data[offset:]
+func (th *AsnData) Parse(data []byte) ([]byte, bool, error) {
 	if len(data) < 2 {
 		return data, false, nil
 	}
@@ -310,17 +309,19 @@ func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool, error) {
 	}
 	pos++
 
-	if len(th.data)-pos < th.len {
+	if len(data)-pos < th.len {
 		return data, false, nil
 	}
 
-	th.data = th.data[pos : pos+th.len]
+	th.reset()
+	th.fdata = data[:pos+th.len]
+	th.data = th.fdata[pos:]
 	debugPrint("Parse: %s con: %t", th.tag.typeName(), th.tag.tagConstructed)
 	if th.tag.tagConstructed {
 		buf := th.data
 		for ok := true; len(buf) > 0 && ok; {
 			var asn AsnData
-			if buf, ok, err = asn.Parse(buf, 0); ok {
+			if buf, ok, err = asn.Parse(buf); ok {
 				th.sub = append(th.sub, &asn)
 			}
 		}
@@ -331,7 +332,7 @@ func (th *AsnData) Parse(data []byte, offset int) ([]byte, bool, error) {
 			return data, false, nil
 		}
 	}
-	return data[offset+pos+len(th.data):], true, nil
+	return data[len(th.fdata):], true, nil
 }
 
 func (th *AsnData) decode(sheme *Sheme, ctx *AsnContext) (res interface{}, err error) {

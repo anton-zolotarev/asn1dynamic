@@ -14,7 +14,7 @@ type AsnElm interface {
 type AsnDec interface {
 	AsnElm
 	Decode(sheme *Sheme) (*simplejson.Json, error)
-	Parse(data []byte, offset int) ([]byte, bool, error)
+	Parse(data []byte) ([]byte, bool, error)
 }
 
 type AsnPath interface {
