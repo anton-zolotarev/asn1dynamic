@@ -1,6 +1,7 @@
 package asn1dynamic
 
 import (
+	"container/list"
 	"io"
 
 	"github.com/anton-zolotarev/go-simplejson"
@@ -43,7 +44,7 @@ func (s *Sheme) Type() string {
 	return tp
 }
 
-func (s *Sheme) Id() int {
+func (s *Sheme) ID() int {
 	tp, _ := s.obj.Get("$id").Int()
 	return tp
 }
@@ -52,7 +53,7 @@ func (s *Sheme) Index() int {
 	if tp, err := s.obj.Get("$tag").Int(); err == nil {
 		return tp
 	}
-	return s.Id()
+	return s.ID()
 }
 
 func (s *Sheme) Optional() bool {
@@ -112,19 +113,75 @@ func (s *Sheme) Of() *Sheme {
 	return nil
 }
 
-func (s *Sheme) SeqItems() []*Sheme {
+type fieldList struct {
+	cur *list.Element
+	lst *list.List
+}
+
+func (fl *fieldList) Len() int {
+	return fl.lst.Len()
+}
+
+func (fl *fieldList) Begin() *Sheme {
+	if fl.cur = fl.lst.Front(); fl.cur != nil {
+		return fl.cur.Value.(*Sheme)
+	}
+	return nil
+}
+
+func (fl *fieldList) Next() *Sheme {
+	if fl.cur = fl.cur.Next(); fl.cur != nil {
+		return fl.cur.Value.(*Sheme)
+	}
+	return nil
+}
+
+func (fl *fieldList) FindIndex(idx int) *Sheme {
+	for el := fl.Begin(); el != nil; el = fl.Next() {
+		if idx == el.Index() {
+			return el
+		}
+	}
+	return nil
+}
+
+func (fl *fieldList) FindID(idx int) *Sheme {
+	for el := fl.Begin(); el != nil; el = fl.Next() {
+		if idx == el.ID() {
+			return el
+		}
+	}
+	return nil
+}
+
+func (fl *fieldList) Add(sh *Sheme) {
+	var fnd *list.Element
+	id := sh.ID()
+	for el := fl.lst.Front(); el != nil; el = el.Next() {
+		elsh := el.Value.(*Sheme)
+		if id > elsh.ID() {
+			fnd = el
+		}
+	}
+	if fnd != nil {
+		fl.lst.InsertAfter(sh, fnd)
+	} else {
+		fl.lst.PushFront(sh)
+	}
+}
+
+func (s *Sheme) FieldList() fieldList {
 	fld := s.FieldAttr()
-	ret := make([]*Sheme, len(fld))
+	ret := fieldList{lst: list.New()}
 
 	for k, v := range fld {
 		if obj, ok := v.(map[string]interface{}); ok {
 			sh := Wrap(obj)
 			sh.name = k
-			if id := sh.Id(); id < len(ret) {
-				ret[id] = sh
-			}
+			ret.Add(sh)
 		}
 	}
+
 	return ret
 }
 

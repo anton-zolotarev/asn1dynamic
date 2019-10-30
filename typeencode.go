@@ -80,8 +80,6 @@ func makeType(sheme *Sheme, tag int) (*AsnData, error) {
 
 	out := AsnData{sheme: sheme}
 	out.tag.tagNumber = tag
-	out.tag.tagged = sheme.Tagged()
-	out.tag.taggedN = sheme.Index()
 	return &out, nil
 }
 
@@ -337,7 +335,11 @@ func (th *AsnData) SeqFieldByName(name string, el AsnElm, err error) error {
 	if debug && !reflect.DeepEqual(sh.obj.Interface(), dt.sheme.obj.Interface()) {
 		return encodeShemeErr("incompatible interfaces '%s' and '%s'", sh.Name(), name)
 	}
-	th.sub[sh.Id()] = dt
+	id := sh.ID()
+	if id > len(th.sub) || th.sub[id] != nil {
+		return encodeShemeErr("'%s' corrupt field id '%s'", sh.Name(), name)
+	}
+	th.sub[id] = dt
 	return nil
 }
 
@@ -375,8 +377,6 @@ func (sheme *Sheme) Choice() (AsnChoice, error) {
 	}
 	out = makeTag(0, true)
 	out.sheme = sheme
-	out.tag.tagged = sheme.Tagged()
-	out.tag.taggedN = sheme.Index()
 	return out, err
 }
 

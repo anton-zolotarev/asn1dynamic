@@ -552,15 +552,15 @@ func (th *AsnData) parseSequence(sheme *Sheme, ctx *AsnContext) (ret map[string]
 		return nil, decodeDataErr("'%s' not constructed", tho.tag.typeName())
 	}
 
-	ls := sheme.SeqItems()
-	if len(ls) == 0 {
+	fld := sheme.FieldList()
+	if fld.Len() == 0 {
 		return nil, decodeShemeErr("'%s' cannot find any field in sheme", th.tag.typeName())
 	}
 
 	idx := 0
 	ret = make(map[string]interface{})
 	ctxn := &AsnContext{parent: ctx, tag: th}
-	for _, sh := range ls {
+	for sh := fld.Begin(); sh != nil; sh = fld.Next() {
 		var dt interface{}
 		if idx < len(th.sub) {
 			dt, err = th.sub[idx].decode(sh, ctxn)
@@ -611,33 +611,35 @@ func (th *AsnData) parseSequenceOf(sheme *Sheme, ctx *AsnContext) (ret []interfa
 func (th *AsnData) parseChoice(sheme *Sheme, ctx *AsnContext) (ret interface{}, err error) {
 	debugPrint("parseChoice: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
-	ls := sheme.SeqItems()
-	if len(ls) == 0 {
+	fld := sheme.FieldList()
+	if fld.Len() == 0 {
 		return nil, decodeShemeErr("'%s' cannot find any field in sheme", th.tag.typeName())
 	}
 
 	ctxn := &AsnContext{parent: ctx, tag: th}
-	num := th.tag.tagNumber
 	th = th.castTag(sheme, ctx)
 
-	if num < len(ls) {
-		debugPrint("parseChoice: primary %d (%s)", ls[num].Index(), ls[num].Name())
-		ret, err = th.decode(ls[num], ctxn)
+	var cur *Sheme
+	if sh := fld.FindIndex(th.tag.tagNumber); sh != nil {
+		debugPrint("parseChoice: primary %d (%s)", sh.Index(), sh.Name())
+		if ret, err = th.decode(sh, ctxn); err == nil {
+			cur = sh
+		}
 	}
 
-	if err != nil {
-		for id, sh := range ls {
+	if cur == nil {
+		for sh := fld.Begin(); sh != nil; sh = fld.Next() {
 			debugPrint("parseChoice: choice %d (%s)", sh.Index(), sh.Name())
 			if ret, err = th.decode(sh, ctxn); err == nil {
-				num = id
+				cur = sh
 				break
 			}
 		}
 	}
 
-	if err == nil {
+	if cur != nil {
 		ret2 := make(map[string]interface{})
-		ret2[ls[num].Name()] = ret
+		ret2[cur.Name()] = ret
 		ret = ret2
 		return
 	}

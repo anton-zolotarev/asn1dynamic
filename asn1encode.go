@@ -71,22 +71,22 @@ func (th *AsnData) preprocess() int {
 
 func (th *AsnData) encode(dst []byte) ([]byte, error) {
 	var err error
-
 	dst = appendTagAndLength(th, dst)
 
 	if th.tag.tagConstructed {
-		fld := th.sheme.SeqItems()
 		for i := 0; i < len(th.sub); i++ {
 			if th.sub[i] != nil {
 				dst, err = th.sub[i].encode(dst)
-			} else if i < len(fld) && !fld[i].Optional() {
-				err = encodeShemeErr("'%s' miss not optional field '%s'", th.sheme.Name(), fld[i].Name())
+			} else {
+				fld := th.sheme.FieldList()
+				if sh := fld.FindID(i); sh != nil && !sh.Optional() {
+					err = encodeShemeErr("'%s' miss not optional field '%s'", th.sheme.Name(), sh.Name())
+				}
 			}
 		}
 	} else {
 		dst = append(dst, th.data...)
 	}
-
 	return dst, err
 }
 
