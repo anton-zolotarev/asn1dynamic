@@ -566,14 +566,12 @@ func (th *AsnData) parseSequence(sheme *Sheme, ctx *AsnContext) (ret map[string]
 			dt, err = th.sub[idx].decode(sh, ctxn)
 		} else {
 			err = fmt.Errorf("miss field '%s' (%s)", sh.Name(), sh.Type())
-		}
-
-		if err == nil || th.sub[idx] == nil {
 			idx++
 		}
 
 		if err == nil {
 			ret[sh.Name()] = dt
+			idx++
 		} else if sh.Optional() {
 			if def := sh.DefAttr(); def != nil {
 				ret[sh.Name()] = def
