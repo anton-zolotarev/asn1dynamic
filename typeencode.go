@@ -79,6 +79,7 @@ func makeType(sheme *Sheme, tag int) (*AsnData, error) {
 	}
 
 	out := AsnData{sheme: sheme}
+	out.tag.tagClass = classUniversal
 	out.tag.tagNumber = tag
 	return &out, nil
 }

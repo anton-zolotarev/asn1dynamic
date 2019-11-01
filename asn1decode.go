@@ -384,13 +384,13 @@ func (th *AsnData) decode(sheme *Sheme, ctx *AsnContext) (res interface{}, err e
 		if sheme.FieldAttr() != nil {
 			return th.parseSequence(sheme, ctx)
 		}
-		return nil, decodeShemeErr("cannot find any field in sheme")
+		return nil, decodeShemeErr("'%s' does not contain any field", sheme.Name())
 	case "CHOICE":
 		return th.parseChoice(sheme, ctx)
 	case "ANY":
 		return th.parseAny(sheme, ctx)
 	}
-	return nil, Errorf("AsnData.decode: unknown type '%s' in sheme", sheme.Type())
+	return nil, Errorf("AsnData.decode: '%s' of unknown type '%s'", sheme.Name(), sheme.Type())
 }
 
 func (th *AsnData) Decode(sheme *Sheme) (*simplejson.Json, error) {
@@ -402,6 +402,6 @@ func (th *AsnData) Decode(sheme *Sheme) (*simplejson.Json, error) {
 	return simplejson.Wrap(ret), nil
 }
 
-func NewDecoder() AsnDec {
+func NewDecoder() AsnElm {
 	return &AsnData{}
 }

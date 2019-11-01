@@ -15,7 +15,7 @@ func NewDataReader(r io.Reader, size int) asnReader {
 	return asnReader{reader: r, buff1: make([]byte, 512), buff2: make([]byte, 0, size)}
 }
 
-func (rd *asnReader) Read() (AsnDec, error) {
+func (rd *asnReader) Read() (AsnElm, error) {
 	dec := NewDecoder()
 
 	ln, err := rd.reader.Read(rd.buff1)

@@ -174,7 +174,7 @@ func (th *AsnData) castTag(sheme *Sheme, ctx *AsnContext) *AsnData {
 }
 
 func (th *AsnData) parseNull(sheme *Sheme, ctx *AsnContext) (ret interface{}, err error) {
-	debugPrint("parseNull: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseNull: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagNULL {
@@ -184,7 +184,7 @@ func (th *AsnData) parseNull(sheme *Sheme, ctx *AsnContext) (ret interface{}, er
 }
 
 func (th *AsnData) parseBool(sheme *Sheme, ctx *AsnContext) (ret bool, err error) {
-	debugPrint("parseBool: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseBool: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagBOOLEAN {
@@ -209,7 +209,7 @@ func (th *AsnData) parseBool(sheme *Sheme, ctx *AsnContext) (ret bool, err error
 }
 
 func (th *AsnData) parseInt64(sheme *Sheme, ctx *AsnContext) (ret int64, err error) {
-	debugPrint("parseInt64: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseInt64: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagINTEGER {
@@ -243,7 +243,7 @@ func (th *AsnData) parseInt64(sheme *Sheme, ctx *AsnContext) (ret int64, err err
 }
 
 func (th *AsnData) parseInt32(sheme *Sheme, ctx *AsnContext) (ret int32, err error) {
-	debugPrint("parseInt32: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseInt32: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	ret64, err := th.parseInt64(sheme, ctx)
 	if err != nil {
@@ -262,7 +262,7 @@ func (th *AsnData) parseInt32(sheme *Sheme, ctx *AsnContext) (ret int32, err err
 }
 
 func (th *AsnData) parseEnumerated(sheme *Sheme, ctx *AsnContext) (ret string, err error) {
-	debugPrint("parseEnumerated: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseEnumerated: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagENUMERATED {
@@ -286,7 +286,7 @@ func (th *AsnData) parseEnumerated(sheme *Sheme, ctx *AsnContext) (ret string, e
 }
 
 func (th *AsnData) parseBitString(sheme *Sheme, ctx *AsnContext) (ret BitStr, err error) {
-	debugPrint("parseBitString: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseBitString: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagBIT_STR {
@@ -311,7 +311,7 @@ func (th *AsnData) parseBitString(sheme *Sheme, ctx *AsnContext) (ret BitStr, er
 }
 
 func (th *AsnData) parseObjectDescriptor(sheme *Sheme, ctx *AsnContext) (res string, err error) {
-	debugPrint("parseObjectDescriptor: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseObjectDescriptor: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagObjDescriptor {
@@ -324,7 +324,7 @@ func (th *AsnData) parseObjectDescriptor(sheme *Sheme, ctx *AsnContext) (res str
 }
 
 func (th *AsnData) parseObjectIdentifier(sheme *Sheme, ctx *AsnContext) (res OID, err error) {
-	debugPrint("parseObjectIdentifier: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseObjectIdentifier: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagOID {
@@ -369,7 +369,7 @@ func (th *AsnData) parseObjectIdentifier(sheme *Sheme, ctx *AsnContext) (res OID
 }
 
 func (th *AsnData) parseUTCTime(sheme *Sheme, ctx *AsnContext) (ret time.Time, err error) {
-	debugPrint("parseUTCTime: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseUTCTime: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagUTCTime {
@@ -408,7 +408,7 @@ func (th *AsnData) parseUTCTime(sheme *Sheme, ctx *AsnContext) (ret time.Time, e
 // parseGeneralizedTime parses the GeneralizedTime from the given byte slice
 // and returns the resulting time.
 func (th *AsnData) parseGeneralizedTime(sheme *Sheme, ctx *AsnContext) (ret time.Time, err error) {
-	debugPrint("parseGeneralizedTime: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseGeneralizedTime: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagGeneralizedTime {
@@ -429,7 +429,7 @@ func (th *AsnData) parseGeneralizedTime(sheme *Sheme, ctx *AsnContext) (ret time
 }
 
 func (th *AsnData) parseNumericString(sheme *Sheme, ctx *AsnContext) (ret string, err error) {
-	debugPrint("parseNumericString: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseNumericString: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagNumericString {
@@ -454,7 +454,7 @@ func (th *AsnData) parseNumericString(sheme *Sheme, ctx *AsnContext) (ret string
 }
 
 func (th *AsnData) parsePrintableString(sheme *Sheme, ctx *AsnContext) (ret string, err error) {
-	debugPrint("parsePrintableString: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parsePrintableString: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagPrintableString {
@@ -479,7 +479,7 @@ func (th *AsnData) parsePrintableString(sheme *Sheme, ctx *AsnContext) (ret stri
 }
 
 func (th *AsnData) parseIA5String(sheme *Sheme, ctx *AsnContext) (ret string, err error) {
-	debugPrint("parseIA5String: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseIA5String: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagIA5String {
@@ -503,7 +503,7 @@ func (th *AsnData) parseIA5String(sheme *Sheme, ctx *AsnContext) (ret string, er
 }
 
 func (th *AsnData) parseUTF8String(sheme *Sheme, ctx *AsnContext) (ret string, err error) {
-	debugPrint("parseUTF8String: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseUTF8String: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagUTF8String {
@@ -526,7 +526,7 @@ func (th *AsnData) parseUTF8String(sheme *Sheme, ctx *AsnContext) (ret string, e
 }
 
 func (th *AsnData) parseOctetString(sheme *Sheme, ctx *AsnContext) (ret []byte, err error) {
-	debugPrint("parseOctetString: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseOctetString: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagOCTET_STR {
@@ -542,7 +542,7 @@ func (th *AsnData) parseOctetString(sheme *Sheme, ctx *AsnContext) (ret []byte, 
 }
 
 func (th *AsnData) parseSequence(sheme *Sheme, ctx *AsnContext) (ret map[string]interface{}, err error) {
-	debugPrint("parseSequence: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseSequence: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagSEQUENCE {
@@ -562,15 +562,18 @@ func (th *AsnData) parseSequence(sheme *Sheme, ctx *AsnContext) (ret map[string]
 	ctxn := &AsnContext{parent: ctx, tag: th}
 	for sh := fld.Begin(); sh != nil; sh = fld.Next() {
 		var dt interface{}
-		if idx < len(th.sub) {
+		if idx < len(th.sub) && th.sub[idx] != nil {
 			dt, err = th.sub[idx].decode(sh, ctxn)
 		} else {
-			err = fmt.Errorf("miss field %s %s", sh.Name(), sh.Type())
+			err = fmt.Errorf("miss field '%s' (%s)", sh.Name(), sh.Type())
+		}
+
+		if err == nil || th.sub[idx] == nil {
+			idx++
 		}
 
 		if err == nil {
 			ret[sh.Name()] = dt
-			idx++
 		} else if sh.Optional() {
 			if def := sh.DefAttr(); def != nil {
 				ret[sh.Name()] = def
@@ -584,7 +587,7 @@ func (th *AsnData) parseSequence(sheme *Sheme, ctx *AsnContext) (ret map[string]
 }
 
 func (th *AsnData) parseSequenceOf(sheme *Sheme, ctx *AsnContext) (ret []interface{}, err error) {
-	debugPrint("parseSequenceOf: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseSequenceOf: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagSEQUENCE {
@@ -609,7 +612,7 @@ func (th *AsnData) parseSequenceOf(sheme *Sheme, ctx *AsnContext) (ret []interfa
 }
 
 func (th *AsnData) parseChoice(sheme *Sheme, ctx *AsnContext) (ret interface{}, err error) {
-	debugPrint("parseChoice: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseChoice: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	fld := sheme.FieldList()
 	if fld.Len() == 0 {
@@ -647,7 +650,7 @@ func (th *AsnData) parseChoice(sheme *Sheme, ctx *AsnContext) (ret interface{}, 
 }
 
 func (th *AsnData) parseAny(sheme *Sheme, ctx *AsnContext) (ret interface{}, err error) {
-	debugPrint("parseAny: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseAny: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	if ctx.od == "" {
 		return nil, decodeDataErr("'%s' miss ObjectDescriptor", th.tag.typeName())
@@ -662,7 +665,7 @@ func (th *AsnData) parseAny(sheme *Sheme, ctx *AsnContext) (ret interface{}, err
 }
 
 func (th *AsnData) parseReal(sheme *Sheme, ctx *AsnContext) (ret float64, err error) {
-	debugPrint("parseReal: %s (%s) tag %s", sheme.Name(), sheme.Type(), th.tag.typeName())
+	debugPrint("parseReal: '%s' (%s) tag '%s'", sheme.Name(), sheme.Type(), th.tag.typeName())
 	debugHex(th.data)
 	tho, th := th, th.castTag(sheme, ctx)
 	if th.tag.tagNumber != tagREAL {

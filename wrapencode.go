@@ -9,10 +9,7 @@ import (
 type AsnElm interface {
 	Encode() ([]byte, error)
 	RawData() []byte
-}
 
-type AsnDec interface {
-	AsnElm
 	Decode(sheme *Sheme) (*simplejson.Json, error)
 	Parse(data []byte) ([]byte, bool, error)
 }
@@ -137,6 +134,10 @@ type AsnAny interface {
 
 	AnySequence(name string) (out AsnSeq, err error)
 	AnyChoice(name string) (out AsnChoice, err error)
+}
+
+func AsnData2AsnElm(th *AsnData) AsnElm {
+	return th
 }
 
 func setByType(th *AsnData, elm AsnElm, err error) error {
