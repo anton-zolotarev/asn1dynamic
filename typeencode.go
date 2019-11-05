@@ -315,7 +315,7 @@ func (sheme *Sheme) Sequence() (AsnSeq, error) {
 		if fld != nil {
 			out.sub = make([]*AsnData, len(fld))
 		} else if sheme.OfAttr() == nil {
-			return nil, encodeShemeErr("MakeSequence: no sheme description")
+			return nil, encodeShemeErr("Sequence '%s' does not contain $field or $of", sheme.Name())
 		}
 	}
 	return out, err
