@@ -136,8 +136,12 @@ type AsnAny interface {
 	AnyChoice(name string) (out AsnChoice, err error)
 }
 
-func AsnData2AsnElm(th *AsnData) AsnElm {
-	return th
+func AsnElm2AsnData(th AsnElm) *AsnData {
+	return th.(*AsnData)
+}
+
+func AsnElm2AsnDataSub(th AsnElm) []*AsnData {
+	return AsnElm2AsnData(th).sub
 }
 
 func setByType(th *AsnData, elm AsnElm, err error) error {
@@ -149,7 +153,7 @@ func setByType(th *AsnData, elm AsnElm, err error) error {
 	case "ANY":
 		return th.AnySet(elm, err)
 	}
-	return encodeTypeErr("Mount", th.sheme)
+	return encodeTypeErr(th.sheme.Type(), th.sheme)
 }
 
 func makePath(th *AsnData, path ...string) (*AsnData, error) {
@@ -158,6 +162,7 @@ func makePath(th *AsnData, path ...string) (*AsnData, error) {
 	}
 
 	var out AsnElm
+	shtp := th.sheme.Type()
 	if sh, err := findField(th.sheme, path[0]); err == nil {
 		switch sh.Type() {
 		case "SEQUENCE":
@@ -169,11 +174,15 @@ func makePath(th *AsnData, path ...string) (*AsnData, error) {
 		default:
 			return nil, encodeTypeErr(path[0], sh)
 		}
+		debugPrintln("Path:", path, th.sheme.Type(), sh.Type())
 	} else {
 		return nil, err
 	}
 	if err := setByType(th, out, nil); err != nil {
 		return nil, err
+	}
+	if shtp == "ANY" {
+		return makePath(this(th), path[1:]...)
 	}
 	return makePath(this(out), path[1:]...)
 }
@@ -734,12 +743,8 @@ func (th *AsnData) Sequence(name string) (out AsnSeq, err error) {
 }
 
 func (th *AsnData) PathSequence(path ...string) (out AsnSeq, err error) {
-	pth, err := makePath(th, path[:len(path)-1]...)
-	if err == nil {
-		el, err := pth.Sequence(path[len(path)-1])
-		return el, setByType(pth, el, err)
-	}
-	return nil, err
+	out, err = makePath(th, path...)
+	return
 }
 
 func (th *AsnData) AddSequence() (out AsnSeq, err error) {
@@ -768,7 +773,7 @@ func (th *AsnData) ChoiceSequence(name string) (out AsnSeq, err error) {
 
 func (th *AsnData) AnySequence(name string) (out AsnSeq, err error) {
 	if out, err = th.Sequence(name); err == nil {
-		err = th.AnySet(out, nil)
+		err, out = th.AnySet(out, nil), th
 	}
 	return
 }
@@ -782,12 +787,8 @@ func (th *AsnData) Choice(name string) (out AsnChoice, err error) {
 }
 
 func (th *AsnData) PathChoice(path ...string) (out AsnChoice, err error) {
-	pth, err := makePath(th, path[:len(path)-1]...)
-	if err == nil {
-		el, err := pth.Choice(path[len(path)-1])
-		return el, setByType(pth, el, err)
-	}
-	return nil, err
+	out, err = makePath(th, path...)
+	return
 }
 
 func (th *AsnData) AddChoice() (out AsnChoice, err error) {
@@ -816,7 +817,7 @@ func (th *AsnData) ChoiceChoice(name string) (out AsnChoice, err error) {
 
 func (th *AsnData) AnyChoice(name string) (out AsnChoice, err error) {
 	if out, err = th.Choice(name); err == nil {
-		err = th.AnySet(out, nil)
+		err, out = th.AnySet(out, nil), th
 	}
 	return
 }
@@ -830,12 +831,8 @@ func (th *AsnData) Any(name string) (out AsnAny, err error) {
 }
 
 func (th *AsnData) PathAny(path ...string) (out AsnAny, err error) {
-	pth, err := makePath(th, path[:len(path)-1]...)
-	if err == nil {
-		el, err := pth.Any(path[len(path)-1])
-		return el, setByType(pth, el, err)
-	}
-	return nil, err
+	out, err = makePath(th, path...)
+	return
 }
 
 func (th *AsnData) AddAny() (out AsnAny, err error) {

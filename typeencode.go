@@ -334,11 +334,11 @@ func (th *AsnData) SeqFieldByName(name string, el AsnElm, err error) error {
 		return encodeShemeErr("'%s' does not contain '%s'", th.sheme.Name(), name)
 	}
 	if debug && !reflect.DeepEqual(sh.obj.Interface(), dt.sheme.obj.Interface()) {
-		return encodeShemeErr("incompatible interfaces '%s' and '%s'", sh.Name(), name)
+		return encodeShemeErr("incompatible interfaces '%s' and '%s'", th.sheme.Name(), name)
 	}
 	id := sh.ID()
-	if id > len(th.sub) || th.sub[id] != nil {
-		return encodeShemeErr("'%s' corrupt field id '%s'", sh.Name(), name)
+	if id >= len(th.sub) || th.sub[id] != nil {
+		return encodeShemeErr("'%s' corrupt field id '%s'", th.sheme.Name(), name)
 	}
 	th.sub[id] = dt
 	return nil
@@ -435,8 +435,9 @@ func (th *AsnData) AnySetByName(name string, el AsnElm, err error) error {
 	if debug && !reflect.DeepEqual(sh.obj.Interface(), dt.sheme.obj.Interface()) {
 		return encodeShemeErr("incompatible interfaces '%s' and '%s'", sh.Name(), name)
 	}
-	th.tag = dt.tag
-	th.sub = dt.sub
+	// th.tag = dt.tag
+	// th.sub = dt.sub
+	*th = *dt
 	return nil
 }
 
