@@ -52,7 +52,11 @@ func (th *AsnData) preprocess() int {
 	if th.tag.tagConstructed {
 		for i := 0; i < len(th.sub); i++ {
 			if th.sub[i] != nil {
-				th.len += th.sub[i].preprocess() + 2
+				len := th.sub[i].preprocess()
+				if len >= 128 {
+					th.len += lengthInt(len)
+				}
+				th.len += len + 2
 			}
 		}
 	} else {
@@ -63,9 +67,6 @@ func (th *AsnData) preprocess() int {
 		th.len += base128IntLength(int64(th.tag.tagNumber))
 	}
 
-	if len(th.data) >= 128 {
-		th.len += lengthInt(len(th.data))
-	}
 	return th.len
 }
 
@@ -91,7 +92,11 @@ func (th *AsnData) encode(dst []byte) ([]byte, error) {
 }
 
 func (th *AsnData) Encode() ([]byte, error) {
-	ln := th.preprocess()
-	out := make([]byte, 0, ln)
+	len := th.preprocess()
+	if len >= 128 {
+		len += lengthInt(len)
+	}
+	len += 2
+	out := make([]byte, 0, len)
 	return th.encode(out)
 }
