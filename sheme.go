@@ -2,6 +2,7 @@ package asn1dynamic
 
 import (
 	"container/list"
+	"fmt"
 	"io"
 
 	"github.com/anton-zolotarev/go-simplejson"
@@ -12,13 +13,73 @@ type Sheme struct {
 	obj  *simplejson.Json
 }
 
+func check(obj *simplejson.Json, name string) error {
+	mp, _ := obj.Map()
+	for k, v := range mp {
+		fld := simplejson.Wrap(v)
+		if k == "$type" {
+			tp := fld.MustString()
+			if tp == "CHOICE" || tp == "SEQUENCE" || tp == "ANY" {
+				_, f1 := mp["$field"]
+				_, f2 := mp["$of"]
+				if !f1 && !f2 {
+					return fmt.Errorf("'%s' (%s) miss '$field' or '$of'", name, tp)
+				}
+			}
+		}
+		if k == "$field" {
+			var tags map[int]bool
+			var ids map[int]bool
+			fldmp, _ := fld.Map()
+			for k := range fldmp {
+				if tn, err := fld.GetPath(k, "$tag").Int(); err == nil {
+					if len(tags) == 0 {
+						tags = make(map[int]bool)
+					}
+					// if _, f := tags[tn]; f {
+					// 	return fmt.Errorf("$tag '%d' in '%s' field already exists", tn, k)
+					// }
+					tags[tn] = true
+				}
+			}
+			for k := range fldmp {
+				if tn, err := fld.GetPath(k, "$id").Int(); err == nil {
+					if len(ids) == 0 {
+						ids = make(map[int]bool)
+					}
+					if _, f := ids[tn]; f {
+						return fmt.Errorf("$id '%d' in '%s' field already exists", tn, k)
+					}
+					if _, f := tags[tn]; !f && !implicit {
+						fld.Get(k).Set("$implicit", true)
+					}
+					ids[tn] = true
+				} else if km, err := fld.Get(k).Map(); err == nil {
+					_, f1 := km["$field"]
+					_, f2 := km["$of"]
+					if !f1 && !f2 {
+						return fmt.Errorf("'%s' miss '$id' field", k)
+					}
+				}
+			}
+		}
+		if err := check(fld, k); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Sheme) init() error {
-	if obj, err := s.obj.Compile(); err != nil {
+	obj, err := s.obj.Compile()
+	if err != nil {
 		return err
-	} else {
-		s.obj = obj
+	}
+	if err = check(obj, ""); err != nil {
+		return err
 	}
 
+	s.obj = obj
 	return nil
 }
 
@@ -61,6 +122,11 @@ func (s *Sheme) Optional() bool {
 	return tp
 }
 
+func (s *Sheme) Implicit() bool {
+	tp, _ := s.obj.Get("$implicit").Bool()
+	return tp
+}
+
 func (s *Sheme) Tagged() bool {
 	_, tp := s.obj.CheckGet("$tag")
 	return tp
@@ -98,9 +164,7 @@ func (s *Sheme) OfAttr() map[string]interface{} {
 func (s *Sheme) Field(name string) *Sheme {
 	if fld := s.FieldAttr(); fld != nil {
 		if itm, ok := fld[name].(map[string]interface{}); ok {
-			sh := Wrap(itm)
-			sh.name = name
-			return sh
+			return Wrap(itm, name)
 		}
 	}
 	return nil
@@ -108,7 +172,7 @@ func (s *Sheme) Field(name string) *Sheme {
 
 func (s *Sheme) Of() *Sheme {
 	if fld := s.OfAttr(); fld != nil {
-		return Wrap(fld)
+		return Wrap(fld, s.name)
 	}
 	return nil
 }
@@ -138,6 +202,7 @@ func (fl *fieldList) Next() *Sheme {
 
 func (fl *fieldList) FindIndex(idx int) *Sheme {
 	for el := fl.Begin(); el != nil; el = fl.Next() {
+		debugPrint("FindIndex %d == %d", idx, el.Index())
 		if idx == el.Index() {
 			return el
 		}
@@ -176,9 +241,7 @@ func (s *Sheme) FieldList() fieldList {
 
 	for k, v := range fld {
 		if obj, ok := v.(map[string]interface{}); ok {
-			sh := Wrap(obj)
-			sh.name = k
-			ret.Add(sh)
+			ret.Add(Wrap(obj, k))
 		}
 	}
 
@@ -196,8 +259,12 @@ func (s *Sheme) EnumItems() map[int]string {
 	return ret
 }
 
-func Wrap(itm map[string]interface{}) *Sheme {
-	return &Sheme{obj: simplejson.Wrap(itm)}
+func Wrap(itm map[string]interface{}, name ...string) *Sheme {
+	out := &Sheme{obj: simplejson.Wrap(itm)}
+	if len(name) > 0 {
+		out.name = name[0]
+	}
+	return out
 }
 
 func NewSheme(data []byte) (*Sheme, error) {
