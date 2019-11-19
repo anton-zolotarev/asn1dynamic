@@ -35,6 +35,10 @@ const (
 	tagGeneralString   = 0x1B
 	tagUniversalString = 0x1C
 	tagBMPString       = 0x1E
+
+	// Virtual
+	tagCHOICE = -1
+	tagANY    = -2
 )
 
 const (
@@ -49,8 +53,10 @@ type AsnTag struct {
 	tagNumber      int
 	tagConstructed bool
 
-	tagged  bool
-	taggedN int
+	implicit bool
+	explicit bool
+	tagged   bool
+	taggedN  int
 }
 
 type AsnData struct {
@@ -68,10 +74,27 @@ type AsnContext struct {
 	od     string
 }
 
-var debug bool
+var (
+	debug    bool
+	implicit bool
+	explicit bool
+)
 
-func Debug(on bool) {
-	debug = on
+func ImplicitMode() {
+	implicit = true
+	explicit = false
+}
+
+func ExplicitMode() {
+	explicit = true
+	implicit = false
+}
+
+func Debug(on ...bool) bool {
+	if len(on) > 0 {
+		debug = on[0]
+	}
+	return debug
 }
 
 func debugHex(data []byte) {
@@ -151,13 +174,13 @@ func typeName(tag int) string {
 	case tagNumericString:
 		return "NumericString"
 	case tagPrintableString:
-		return "PrintableString" // ASCII subset
+		return "PrintableString"
 	case tagTeletexString:
-		return "TeletexString" // aka T61String
+		return "TeletexString"
 	case tagVideotexString:
 		return "VideotexString"
 	case tagIA5String:
-		return "IA5String" // ASCII
+		return "IA5String"
 	case tagUTCTime:
 		return "UTCTime"
 	case tagGeneralizedTime:
@@ -165,13 +188,18 @@ func typeName(tag int) string {
 	case tagGraphicString:
 		return "GraphicString"
 	case tagVisibleString:
-		return "VisibleString" // ASCII subset
+		return "VisibleString"
 	case tagGeneralString:
 		return "GeneralString"
 	case tagUniversalString:
 		return "UniversalString"
 	case tagBMPString:
 		return "BMPString"
+
+	case tagCHOICE:
+		return "CHOICE"
+	case tagANY:
+		return "ANY"
 	}
 	return fmt.Sprint("Universal", tag)
 }
@@ -232,6 +260,11 @@ func typeTag(tag string) int {
 		return tagUniversalString
 	case "BMPString":
 		return tagBMPString
+
+	case "CHOICE":
+		return tagCHOICE
+	case "ANY":
+		return tagANY
 	}
 	return tagEOC
 }
@@ -273,10 +306,6 @@ func (th *AsnTag) parse(data []byte) (pos int, err error) {
 	return
 }
 
-func (th *AsnTag) isUniversal() bool {
-	return th.tagClass == 0x00
-}
-
 func (th *AsnTag) isEOC() bool {
 	return th.tagClass == 0x00 && th.tagNumber == 0x00
 }
@@ -316,8 +345,9 @@ func (th *AsnData) Parse(data []byte) ([]byte, bool, error) {
 	th.reset()
 	th.fdata = data[:pos+th.len]
 	th.data = th.fdata[pos:]
-	debugPrint("Parse: %s con: %t", th.tag.typeName(), th.tag.tagConstructed)
+	debugPrint("Parse: %s len: %d", th.tag.typeName(), th.len)
 	if th.tag.tagConstructed {
+		debugPrint("[")
 		buf := th.data
 		for ok := true; len(buf) > 0 && ok; {
 			var asn AsnData
@@ -325,6 +355,7 @@ func (th *AsnData) Parse(data []byte) ([]byte, bool, error) {
 				th.sub = append(th.sub, &asn)
 			}
 		}
+		debugPrint("]")
 		if err != nil {
 			return data, false, err
 		}
@@ -348,46 +379,48 @@ func (th *AsnData) decode(sheme *Sheme, ctx *AsnContext) (res interface{}, err e
 		}()
 	}
 
-	switch sheme.Type() {
-	case "NULL":
+	markTag(th, sheme)
+
+	switch typeTag(sheme.Type()) {
+	case tagNULL:
 		return th.parseNull(sheme, ctx)
-	case "BOOLEAN":
+	case tagBOOLEAN:
 		return th.parseBool(sheme, ctx)
-	case "INTEGER":
+	case tagINTEGER:
 		return th.parseInt64(sheme, ctx)
-	case "ENUMERATED":
+	case tagENUMERATED:
 		return th.parseEnumerated(sheme, ctx)
-	case "REAL":
+	case tagREAL:
 		return th.parseReal(sheme, ctx)
-	case "UTF8String":
+	case tagUTF8String:
 		return th.parseUTF8String(sheme, ctx)
-	case "NumericString":
+	case tagNumericString:
 		return th.parseNumericString(sheme, ctx)
-	case "PrintableString":
+	case tagPrintableString:
 		return th.parsePrintableString(sheme, ctx)
-	case "OCTET_STRING":
+	case tagOCTET_STR:
 		return th.parseOctetString(sheme, ctx)
-	case "BIT_STRING":
+	case tagBIT_STR:
 		return th.parseBitString(sheme, ctx)
-	case "ObjectIdentifier":
+	case tagOID:
 		return th.parseObjectIdentifier(sheme, ctx)
-	case "ObjectDescriptor":
+	case tagObjDescriptor:
 		return th.parseObjectDescriptor(sheme, ctx)
-	case "UTCTime":
+	case tagUTCTime:
 		return th.parseUTCTime(sheme, ctx)
-	case "GeneralizedTime":
+	case tagGeneralizedTime:
 		return th.parseGeneralizedTime(sheme, ctx)
-	case "SEQUENCE":
+	case tagSEQUENCE:
 		if sheme.OfAttr() != nil {
 			return th.parseSequenceOf(sheme, ctx)
 		}
 		if sheme.FieldAttr() != nil {
 			return th.parseSequence(sheme, ctx)
 		}
-		return nil, decodeShemeErr("'%s' does not contain any field", sheme.Name())
-	case "CHOICE":
+		return nil, decodeShemeErr("Sequence '%s' does not contain '$field' or '$of'", sheme.Name())
+	case tagCHOICE:
 		return th.parseChoice(sheme, ctx)
-	case "ANY":
+	case tagANY:
 		return th.parseAny(sheme, ctx)
 	}
 	return nil, Errorf("AsnData.decode: '%s' of unknown type '%s'", sheme.Name(), sheme.Type())

@@ -13,58 +13,64 @@ type Sheme struct {
 	obj  *simplejson.Json
 }
 
-func check(obj *simplejson.Json, name string) error {
-	mp, _ := obj.Map()
-	for k, v := range mp {
-		fld := simplejson.Wrap(v)
-		if k == "$type" {
-			tp := fld.MustString()
-			if tp == "CHOICE" || tp == "SEQUENCE" || tp == "ANY" {
-				_, f1 := mp["$field"]
-				_, f2 := mp["$of"]
-				if !f1 && !f2 {
-					return fmt.Errorf("'%s' (%s) miss '$field' or '$of'", name, tp)
-				}
-			}
+func check(sh *Sheme, name string) error {
+	tp := sh.Type()
+	of := sh.OfAttr()
+	fl := sh.FieldAttr()
+	switch tp {
+	case "":
+		return fmt.Errorf("miss '$type' in '%s'", name)
+	case "CHOICE", "SEQUENCE", "ANY":
+		if of == nil && fl == nil {
+			return fmt.Errorf("miss '$field' or '$of' in '%s' (%s)", name, tp)
 		}
-		if k == "$field" {
-			var tags map[int]bool
-			var ids map[int]bool
-			fldmp, _ := fld.Map()
-			for k := range fldmp {
-				if tn, err := fld.GetPath(k, "$tag").Int(); err == nil {
-					if len(tags) == 0 {
-						tags = make(map[int]bool)
-					}
-					// if _, f := tags[tn]; f {
-					// 	return fmt.Errorf("$tag '%d' in '%s' field already exists", tn, k)
-					// }
-					tags[tn] = true
-				}
+	default:
+		of = nil
+		fl = nil
+	}
+
+	if of != nil {
+		return check(Wrap(of), name)
+	}
+
+	if fl != nil {
+		var ids map[int]bool
+		var tgs map[int]bool
+		fld := NewFieldList(fl)
+		if fld.Len() == 0 {
+			if tp != "ANY" {
+				return fmt.Errorf("cannot find any $field in '%s' (%s)", name, tp)
 			}
-			for k := range fldmp {
-				if tn, err := fld.GetPath(k, "$id").Int(); err == nil {
+		} else {
+			for sh := fld.Begin(); sh != nil; sh = fld.Next() {
+				if tp != "ANY" {
 					if len(ids) == 0 {
 						ids = make(map[int]bool)
 					}
-					if _, f := ids[tn]; f {
-						return fmt.Errorf("$id '%d' in '%s' field already exists", tn, k)
+					id, err := sh.obj.Get("$id").Int()
+					if err != nil {
+						return fmt.Errorf("miss '$id' in '%s' field of '%s' (%s)", sh.Name(), name, tp)
 					}
-					if _, f := tags[tn]; !f && !implicit {
-						fld.Get(k).Set("$implicit", true)
+					if _, f := ids[id]; f {
+						return fmt.Errorf("duplicate $id '%d' in '%s' field of '%s' (%s)", id, sh.Name(), name, tp)
 					}
-					ids[tn] = true
-				} else if km, err := fld.Get(k).Map(); err == nil {
-					_, f1 := km["$field"]
-					_, f2 := km["$of"]
-					if !f1 && !f2 {
-						return fmt.Errorf("'%s' miss '$id' field", k)
+					ids[id] = true
+				}
+				if tp == "CHOICE" {
+					if len(tgs) == 0 {
+						tgs = make(map[int]bool)
 					}
+					id := sh.Index()
+					if _, f := tgs[id]; f {
+						return fmt.Errorf("duplicate $tag '%d' in '%s' field of '%s' (%s)", id, sh.Name(), name, tp)
+					}
+					sh.obj.Set("$tag", id)
+					tgs[id] = true
+				}
+				if err := check(sh, sh.Name()); err != nil {
+					return err
 				}
 			}
-		}
-		if err := check(fld, k); err != nil {
-			return err
 		}
 	}
 	return nil
@@ -75,8 +81,16 @@ func (s *Sheme) init() error {
 	if err != nil {
 		return err
 	}
-	if err = check(obj, ""); err != nil {
-		return err
+
+	mp, _ := obj.Map()
+	for k, v := range mp {
+		if j, ok := v.(map[string]interface{}); ok {
+			if err = check(Wrap(j), k); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("invalid object '%s'", k)
+		}
 	}
 
 	s.obj = obj
@@ -101,13 +115,15 @@ func (s *Sheme) Class(class string) *Sheme {
 }
 
 func (s *Sheme) Type() string {
-	tp, _ := s.obj.Get("$type").String()
-	return tp
+	return s.obj.Get("$type").MustString()
+}
+
+func (s *Sheme) TypeEn() int {
+	return typeTag(s.Type())
 }
 
 func (s *Sheme) ID() int {
-	tp, _ := s.obj.Get("$id").Int()
-	return tp
+	return s.obj.Get("$id").MustInt()
 }
 
 func (s *Sheme) Index() int {
@@ -118,13 +134,21 @@ func (s *Sheme) Index() int {
 }
 
 func (s *Sheme) Optional() bool {
-	tp, _ := s.obj.Get("$optional").Bool()
-	return tp
+	return s.obj.Get("$optional").MustBool()
 }
 
 func (s *Sheme) Implicit() bool {
-	tp, _ := s.obj.Get("$implicit").Bool()
-	return tp
+	if s.obj.Get("$explicit").MustBool() {
+		return false
+	}
+	return s.obj.Get("$implicit").MustBool()
+}
+
+func (s *Sheme) Explicit() bool {
+	if s.obj.Get("$implicit").MustBool() {
+		return false
+	}
+	return s.obj.Get("$explicit").MustBool()
 }
 
 func (s *Sheme) Tagged() bool {
@@ -137,28 +161,23 @@ func (s *Sheme) DefAttr() interface{} {
 }
 
 func (s *Sheme) MinAttr() int {
-	tp, _ := s.obj.Get("$min").Int()
-	return tp
+	return s.obj.Get("$min").MustInt()
 }
 
 func (s *Sheme) MaxAttr() int {
-	tp, _ := s.obj.Get("$max").Int()
-	return tp
+	return s.obj.Get("$max").MustInt()
 }
 
 func (s *Sheme) FormatAttr() string {
-	tp, _ := s.obj.Get("$format").String()
-	return tp
+	return s.obj.Get("$format").MustString()
 }
 
 func (s *Sheme) FieldAttr() map[string]interface{} {
-	tp, _ := s.obj.Get("$field").Map()
-	return tp
+	return s.obj.Get("$field").MustMap()
 }
 
 func (s *Sheme) OfAttr() map[string]interface{} {
-	tp, _ := s.obj.Get("$of").Map()
-	return tp
+	return s.obj.Get("$of").MustMap()
 }
 
 func (s *Sheme) Field(name string) *Sheme {
@@ -235,8 +254,7 @@ func (fl *fieldList) Add(sh *Sheme) {
 	}
 }
 
-func (s *Sheme) FieldList() fieldList {
-	fld := s.FieldAttr()
+func NewFieldList(fld map[string]interface{}) fieldList {
 	ret := fieldList{lst: list.New()}
 
 	for k, v := range fld {
@@ -246,6 +264,10 @@ func (s *Sheme) FieldList() fieldList {
 	}
 
 	return ret
+}
+
+func (s *Sheme) FieldList() fieldList {
+	return NewFieldList(s.FieldAttr())
 }
 
 func (s *Sheme) EnumItems() map[int]string {

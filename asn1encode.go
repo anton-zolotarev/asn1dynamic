@@ -39,26 +39,43 @@ func appendTagAndLength(th *AsnData, dst []byte) []byte {
 	return dst
 }
 
-func (th *AsnData) preprocess() int {
+func (th *AsnData) preprocess(parent *AsnData, idx int) int {
 	th.len = 0
 
+	debugPrint("Prepare: %s (%s)", th.tag.typeName(), th.sheme.Name())
+	if th.tag.tagClass == classUniversal && th.tag.tagNumber < tagEOC && len(th.sub) == 1 {
+		parent.sub[idx] = th.sub[0]
+		th = parent.sub[idx]
+		debugPrint("Cast: %s (%s)", th.tag.typeName(), th.sheme.Name())
+		return th.preprocess(parent, idx)
+	}
+
 	if th.tag.tagged {
-		// tag := makeTag(th.tag.taggedN, true)
-		// tag.sub[0] = th
-		// th = tag
-		markAsTag(th, th.tag.taggedN)
+		if th.tag.implicit {
+			debugPrint("implicit %d", th.tag.taggedN)
+			th.tag.tagClass = classContextSpecific
+			th.tag.tagNumber = th.tag.taggedN
+		} else {
+			debugPrint("explicit %d", th.tag.taggedN)
+			th.tag.tagged = false
+			parent.sub[idx] = makeTag(classContextSpecific, th.tag.taggedN, 1)
+			parent.sub[idx].sub[0] = th
+			th = parent.sub[idx]
+		}
 	}
 
 	if th.tag.tagConstructed {
+		debugPrint("[")
 		for i := 0; i < len(th.sub); i++ {
 			if th.sub[i] != nil {
-				len := th.sub[i].preprocess()
+				len := th.sub[i].preprocess(th, i)
 				if len >= 128 {
 					th.len += lengthInt(len)
 				}
 				th.len += len + 2
 			}
 		}
+		debugPrint("]")
 	} else {
 		th.len += len(th.data)
 	}
@@ -72,10 +89,13 @@ func (th *AsnData) preprocess() int {
 
 func (th *AsnData) encode(dst []byte) ([]byte, error) {
 	var err error
+	pos := len(dst)
 	dst = appendTagAndLength(th, dst)
 
+	debugPrint("Encode: %s len: %d", th.tag.typeName(), th.len)
 	if th.tag.tagConstructed {
-		for i := 0; i < len(th.sub); i++ {
+		debugPrint("[")
+		for i := 0; i < len(th.sub) && err == nil; i++ {
 			if th.sub[i] != nil {
 				dst, err = th.sub[i].encode(dst)
 			} else {
@@ -85,14 +105,16 @@ func (th *AsnData) encode(dst []byte) ([]byte, error) {
 				}
 			}
 		}
+		debugPrint("]")
 	} else {
 		dst = append(dst, th.data...)
 	}
+	th.fdata = dst[pos:]
 	return dst, err
 }
 
 func (th *AsnData) Encode() ([]byte, error) {
-	len := th.preprocess()
+	len := th.preprocess(nil, 0)
 	if len >= 128 {
 		len += lengthInt(len)
 	}

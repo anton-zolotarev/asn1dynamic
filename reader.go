@@ -28,7 +28,7 @@ func (rd *asnReader) Read() (AsnElm, error) {
 	rd.buff2 = append(rd.buff2, rd.buff1[:ln]...)
 
 	tail, ok, err := dec.Parse(rd.buff2)
-	debugPrintln(len(tail), ok, err)
+	//debugPrintln(len(tail), ok, err)
 	if err != nil {
 		rd.buff2 = rd.buff2[0:0]
 		err = fmt.Errorf("ASNReader Decode: %s", err.Error())

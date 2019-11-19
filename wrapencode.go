@@ -162,7 +162,6 @@ func makePath(th *AsnData, path ...string) (*AsnData, error) {
 	}
 
 	var out AsnElm
-	shtp := th.sheme.Type()
 	if sh, err := findField(th.sheme, path[0]); err == nil {
 		switch sh.Type() {
 		case "SEQUENCE":
@@ -180,9 +179,6 @@ func makePath(th *AsnData, path ...string) (*AsnData, error) {
 	}
 	if err := setByType(th, out, nil); err != nil {
 		return nil, err
-	}
-	if shtp == "ANY" {
-		return makePath(this(th), path[1:]...)
 	}
 	return makePath(this(out), path[1:]...)
 }
@@ -773,7 +769,7 @@ func (th *AsnData) ChoiceSequence(name string) (out AsnSeq, err error) {
 
 func (th *AsnData) AnySequence(name string) (out AsnSeq, err error) {
 	if out, err = th.Sequence(name); err == nil {
-		err, out = th.AnySet(out, nil), th
+		err = th.AnySet(out, nil)
 	}
 	return
 }
@@ -817,7 +813,7 @@ func (th *AsnData) ChoiceChoice(name string) (out AsnChoice, err error) {
 
 func (th *AsnData) AnyChoice(name string) (out AsnChoice, err error) {
 	if out, err = th.Choice(name); err == nil {
-		err, out = th.AnySet(out, nil), th
+		err = th.AnySet(out, nil)
 	}
 	return
 }
