@@ -36,7 +36,10 @@ func check(sh *Sheme, name string) error {
 	if fl != nil {
 		var ids map[int]bool
 		var tgs map[int]bool
-		fld := NewFieldList(fl)
+		fld, err := NewFieldList(fl)
+		if err != nil {
+			return err
+		}
 		if fld.Len() == 0 {
 			if tp != "ANY" {
 				return fmt.Errorf("cannot find any $field in '%s' (%s)", name, tp)
@@ -189,6 +192,17 @@ func (s *Sheme) Field(name string) *Sheme {
 	return nil
 }
 
+func (s *Sheme) FieldKeys() []string {
+	if fld := s.FieldAttr(); fld != nil {
+		out := make([]string, len(fld))
+		for k := range fld {
+			out = append(out, "'"+k+"'")
+		}
+		return out
+	}
+	return nil
+}
+
 func (s *Sheme) Of() *Sheme {
 	if fld := s.OfAttr(); fld != nil {
 		return Wrap(fld, s.name)
@@ -254,20 +268,23 @@ func (fl *fieldList) Add(sh *Sheme) {
 	}
 }
 
-func NewFieldList(fld map[string]interface{}) fieldList {
-	ret := fieldList{lst: list.New()}
+func NewFieldList(fld map[string]interface{}) (*fieldList, error) {
+	ret := &fieldList{lst: list.New()}
 
 	for k, v := range fld {
 		if obj, ok := v.(map[string]interface{}); ok {
 			ret.Add(Wrap(obj, k))
+		} else {
+			return nil, fmt.Errorf("no sheme object: '%s'", k)
 		}
 	}
 
-	return ret
+	return ret, nil
 }
 
-func (s *Sheme) FieldList() fieldList {
-	return NewFieldList(s.FieldAttr())
+func (s *Sheme) FieldList() *fieldList {
+	res, _ := NewFieldList(s.FieldAttr())
+	return res
 }
 
 func (s *Sheme) EnumItems() map[int]string {

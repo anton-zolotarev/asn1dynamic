@@ -126,7 +126,7 @@ func this(elm AsnElm) *AsnData {
 func findField(sheme *Sheme, name string) (*Sheme, error) {
 	sh := sheme.Field(name)
 	if sh == nil {
-		return nil, encodeShemeErr("'%s' does not contain the field '%s'", sheme.Name(), name)
+		return nil, encodeShemeErr("'%s' does not contain the field '%s' %s", sheme.Name(), name, sheme.FieldKeys())
 	}
 	return sh, nil
 }
@@ -342,7 +342,7 @@ func (th *AsnData) SeqFieldByName(name string, el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	debugPrint("SeqFieldByName: '%s' set %s(%s)", th.sheme.Name(), name, this(el).sheme.Type())
+	debugPrint("SeqFieldByName: '%s' set '%s' (%s)", th.sheme.Name(), name, this(el).sheme.Type())
 	dt := this(el)
 	if th.sheme.TypeEn() != tagSEQUENCE {
 		return encodeShemeErr("'%s' does not a SEQUENCE", th.sheme.Name())
@@ -373,7 +373,7 @@ func (th *AsnData) SeqItem(el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	debugPrint("SeqItem: '%s' add %s(%s)", th.sheme.Name(), this(el).sheme.Type())
+	debugPrint("SeqItem: '%s' add %s", th.sheme.Name(), this(el).sheme.Type())
 	dt := this(el)
 	if th.sheme.TypeEn() != tagSEQUENCE {
 		return encodeShemeErr("'%s' does not a SEQUENCE", th.sheme.Name())
@@ -405,7 +405,7 @@ func (th *AsnData) ChoiceSetByName(name string, el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	debugPrint("ChoiceSetByName: '%s' set %s(%s)", th.sheme.Name(), name, this(el).sheme.Type())
+	debugPrint("ChoiceSetByName: '%s' set '%s' (%s)", th.sheme.Name(), name, this(el).sheme.Type())
 	dt := this(el)
 	if th.sheme.TypeEn() != tagCHOICE {
 		return encodeShemeErr("'%s' does not a CHOICE", th.sheme.Name())
@@ -453,7 +453,7 @@ func (th *AsnData) AnySetByName(name string, el AsnElm, err error) error {
 	if err != nil {
 		return err
 	}
-	debugPrint("AnySetByName: '%s' set %s(%s)", th.sheme.Name(), name, this(el).sheme.Type())
+	debugPrint("AnySetByName: '%s' set '%s' (%s)", th.sheme.Name(), name, this(el).sheme.Type())
 	dt := this(el)
 	if th.sheme.TypeEn() != tagANY {
 		return encodeShemeErr("'%s' does not a ANY", th.sheme.Name())
